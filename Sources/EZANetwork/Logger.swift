@@ -19,7 +19,7 @@ class Logger {
     static func log(_ message: String, level: LogLevel = .info) {
         #if DEBUG
         let timestamp = formatter.string(from: Date())
-        print("\(timestamp) EZANetwork: [\(level.rawValue)] \(message)")
+        print("\n\(timestamp) EZANetwork: [\(level.rawValue)] \(message)\n")
         #endif
     }
     

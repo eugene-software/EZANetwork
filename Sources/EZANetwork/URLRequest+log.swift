@@ -36,10 +36,10 @@ extension Publisher {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil, duration: 0)
+            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                request.networkRequestDidComplete(result: nil, currentData: nil, error: error, duration: 0)
+                request.networkRequestDidComplete(result: nil, currentData: nil, error: error)
             }
         })
     }
@@ -50,10 +50,10 @@ extension Publisher {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil, duration: 0)
+            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                request.networkRequestDidComplete(result: nil, currentData: nil, error: error, duration: 0)
+                request.networkRequestDidComplete(result: nil, currentData: nil, error: error)
             }
         })
     }
@@ -64,37 +64,44 @@ extension URLRequest {
     func networkRequestDidStart() {
         var message = [String]()
         
-        message.append("\n--> \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
+        message.append("\n⚪️ --> \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
         
-        self.allHTTPHeaderFields?
-            .map({ "\($0): \($1)" })
-            .forEach { message.append($0) }
+        if let headers = self.allHTTPHeaderFields {
+            message.append("Headers:")
+            message.append(headers.prettyPrintedJSONString ?? "")
+        }
         
         if let body = self.httpBody {
-            message.append(String(describing: body))
+            message.append("Body:")
+            message.append(body.prettyPrintedJSONString ?? "")
         }
         
         message.append("--> END \(self.httpMethod ?? "")")
         Logger.log(message.joined(separator: "\n"))
     }
     
-    func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?, duration: Int) {
+    func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?) {
         var message = [String]()
         
         if error != nil {
-            message.append("\n🛑 REQUEST ERROR\n<-- \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "") (\(duration)ms)")
+            message.append("\n🛑 REQUEST ERROR\n<-- \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
             message.append("\(String(describing: error))")
-            message.append("🛑 <-- END HTTP")
+           
         } else {
             let divider = 200...299 ~= result!.statusCode ? "✅" : "❌"
-            message.append("\n\(divider)<-- \(result?.statusCode ?? 000) \(self.url?.absoluteString ?? "") (\(duration)ms)")
-            result?.allHeaderFields
-                .map({ "\($0): \($1)" })
-                .forEach { message.append($0) }
-            
-            message.append(String(currentData?.prettyPrintedJSONString ?? ""))
-            message.append("\(divider)<-- END HTTP")
+            message.append("\n\(divider) <-- \(result?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
         }
+        
+        if let headers = result?.allHeaderFields {
+            message.append("Headers:")
+            message.append(headers.prettyPrintedJSONString ?? "")
+        }
+        
+        if let body = currentData {
+            message.append("Body:")
+            message.append(body.prettyPrintedJSONString ?? "")
+        }
+        message.append("⚪️ <-- END HTTP")
         Logger.log(message.joined(separator: "\n"))
     }
 }
@@ -102,10 +109,19 @@ extension URLRequest {
 
 private extension Data {
 
-    var prettyPrintedJSONString: NSString? { 
+    var prettyPrintedJSONString: String? {
             guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
-                  let data = try? JSONSerialization.data(withJSONObject: object, options: [.prettyPrinted]),
+                  let data = try? JSONSerialization.data(withJSONObject: object, options: [.withoutEscapingSlashes, .prettyPrinted]),
                   let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
-            return prettyPrintedString
+            return String(prettyPrintedString)
+        }
+}
+
+private extension Dictionary {
+
+    var prettyPrintedJSONString: String? {
+            guard let data = try? JSONSerialization.data(withJSONObject: self, options: [.withoutEscapingSlashes, .prettyPrinted]),
+                  let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
+            return String(prettyPrintedString)
         }
 }
