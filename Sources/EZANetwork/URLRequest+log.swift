@@ -26,7 +26,6 @@
 //
 
 import Foundation
-import SwiftyBeaver
 import Combine
 
 extension Publisher {
@@ -65,7 +64,7 @@ extension URLRequest {
     func networkRequestDidStart() {
         var message = [String]()
         
-        message.append("NETWORK_LOG \n--> \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
+        message.append("\n--> \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
         
         self.allHTTPHeaderFields?
             .map({ "\($0): \($1)" })
@@ -76,7 +75,7 @@ extension URLRequest {
         }
         
         message.append("--> END \(self.httpMethod ?? "")")
-        SwiftyBeaver.debug(message.joined(separator: "\n"))
+        Logger.log(message.joined(separator: "\n"))
     }
     
     func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?, duration: Int) {
@@ -96,7 +95,7 @@ extension URLRequest {
             message.append(String(currentData?.prettyPrintedJSONString ?? ""))
             message.append("\(divider)<-- END HTTP")
         }
-        SwiftyBeaver.debug(message.joined(separator: "\n"))
+        Logger.log(message.joined(separator: "\n"))
     }
 }
 
