@@ -50,7 +50,11 @@ extension Publisher {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
+            if let _ = output.data {
+                request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
+            } else if let progress = output.progress {
+                request.networkRequestProgress(progress: progress)
+            }
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
                 request.networkRequestDidComplete(result: nil, currentData: nil, error: error)
@@ -80,13 +84,26 @@ extension URLRequest {
         Logger.log(message.joined(separator: "\n"))
     }
     
+    func networkRequestProgress(progress: Progress) {
+        
+        guard let url = self.url else { return }
+        
+        var components = URLComponents(url: url, resolvingAgainstBaseURL: false)
+        components?.query = nil
+        var message = [String]()
+        message.append("\n⚪️ <-- PROGRESS for: \(components?.url?.absoluteString ?? "")")
+        message.append("\(progress.completedUnitCount)\\\(progress.totalUnitCount) bytes")
+        message.append("⚪️ <-- END PROGRESS")
+        Logger.log(message.joined(separator: "\n"))
+    }
+    
     func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?) {
         var message = [String]()
         
         if error != nil {
             message.append("\n🛑 REQUEST ERROR\n<-- \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
             message.append("\(String(describing: error))")
-           
+            
         } else {
             let divider = 200...299 ~= result!.statusCode ? "✅" : "❌"
             message.append("\n\(divider) <-- \(result?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
@@ -108,20 +125,20 @@ extension URLRequest {
 
 
 private extension Data {
-
+    
     var prettyPrintedJSONString: String? {
-            guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
-                  let data = try? JSONSerialization.data(withJSONObject: object, options: [.withoutEscapingSlashes, .prettyPrinted]),
-                  let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
-            return String(prettyPrintedString)
-        }
+        guard let object = try? JSONSerialization.jsonObject(with: self, options: []),
+              let data = try? JSONSerialization.data(withJSONObject: object, options: [.withoutEscapingSlashes, .prettyPrinted]),
+              let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
+        return String(prettyPrintedString)
+    }
 }
 
 private extension Dictionary {
-
+    
     var prettyPrintedJSONString: String? {
-            guard let data = try? JSONSerialization.data(withJSONObject: self, options: [.withoutEscapingSlashes, .prettyPrinted]),
-                  let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
-            return String(prettyPrintedString)
-        }
+        guard let data = try? JSONSerialization.data(withJSONObject: self, options: [.withoutEscapingSlashes, .prettyPrinted]),
+              let prettyPrintedString = NSString(data: data, encoding: String.Encoding.utf8.rawValue) else { return nil }
+        return String(prettyPrintedString)
+    }
 }
