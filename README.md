@@ -11,7 +11,6 @@ Import dependenices:
 
 ```swift
 import Combine
-import CoreBluetooth
 import EZANetwork
 ```
 
