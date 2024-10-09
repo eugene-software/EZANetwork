@@ -27,7 +27,7 @@
 
 import Foundation
 
-class Logger {
+class EZALogger {
     
     private static let formatter: DateFormatter = {
         let formatter = DateFormatter()

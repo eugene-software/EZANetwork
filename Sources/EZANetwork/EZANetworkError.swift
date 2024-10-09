@@ -28,13 +28,13 @@
 import Foundation
 import Combine
 
-public enum NetworkApiError: Error {
+public enum EZANetworkError: Error {
     
     case noRequest
     case decoding(Error)
     case server(code: Int, Data?)
     case badResponse(Error)
-    case unknown
+    case unknown(Error)
     case networkFailure
     
     init(_ error: Error) {
@@ -49,7 +49,7 @@ public enum NetworkApiError: Error {
         } else if let error = error as? DecodingError {
             self = .decoding(error)
         } else {
-            self = .unknown
+            self = .unknown(error)
         }
     }
 }
@@ -62,12 +62,12 @@ extension Publisher {
     {
         return tryMap { element -> ProgressResponse in
             guard let httpResponse = element.response as? HTTPURLResponse else {
-                throw NetworkApiError.badResponse(URLError(.badServerResponse))
+                throw EZANetworkError.badResponse(URLError(.badServerResponse))
             }
             if 200..<300 ~= httpResponse.statusCode {
                 return element
             } else {
-                throw NetworkApiError.server(code: httpResponse.statusCode, element.data)
+                throw EZANetworkError.server(code: httpResponse.statusCode, element.data)
             }
         }
     }
@@ -77,19 +77,19 @@ extension Publisher {
     {
         return tryMap { element -> Data in
             guard let httpResponse = element.response as? HTTPURLResponse else {
-                throw NetworkApiError.badResponse(URLError(.badServerResponse))
+                throw EZANetworkError.badResponse(URLError(.badServerResponse))
             }
             if 200..<300 ~= httpResponse.statusCode {
                 return element.data
             } else {
-                throw NetworkApiError.server(code: httpResponse.statusCode, element.data)
+                throw EZANetworkError.server(code: httpResponse.statusCode, element.data)
             }
         }
     }
     
-    func mapInternalError() -> Publishers.MapError<Self, NetworkApiError> {
+    func mapInternalError() -> Publishers.MapError<Self, EZANetworkError> {
         return mapError {
-            return ($0 is NetworkApiError) ? $0 as! NetworkApiError : NetworkApiError($0)
+            return ($0 is EZANetworkError) ? $0 as! EZANetworkError : EZANetworkError($0)
         }
     }
 }

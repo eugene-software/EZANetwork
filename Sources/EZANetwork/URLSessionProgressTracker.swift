@@ -30,7 +30,7 @@ import Combine
 
 class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDataDelegate, @unchecked Sendable {
     
-    private var progressSubject = PassthroughSubject<ProgressResponse, URLError>()
+    private var progressSubject = PassthroughSubject<ProgressResponse, Error>()
     private var accumulatedData = Data()
     private let request: URLRequest
     private var response: URLResponse?
@@ -40,7 +40,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         self.request = request
     }
     
-    func start() -> AnyPublisher<ProgressResponse, URLError> {
+    func start() -> AnyPublisher<ProgressResponse, Error> {
         let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
 
         // Start the download task

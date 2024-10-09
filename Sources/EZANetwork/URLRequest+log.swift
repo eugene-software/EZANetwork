@@ -33,7 +33,7 @@ extension Publisher {
     func log(request: URLRequest) -> Publishers.HandleEvents<Self>
     where Self.Output == URLSession.DataTaskPublisher.Output
     {
-        handleEvents(receiveSubscription: { _ in
+        handleEvents(receiveSubscription: { sub in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
             request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
@@ -70,18 +70,18 @@ extension URLRequest {
         
         message.append("\n⚪️ --> \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
         
-        if let headers = self.allHTTPHeaderFields {
+        if let headersString = self.allHTTPHeaderFields?.prettyPrintedJSONString {
             message.append("Headers:")
-            message.append(headers.prettyPrintedJSONString ?? "")
+            message.append(headersString)
         }
         
-        if let body = self.httpBody {
+        if let bodyString = self.httpBody?.prettyPrintedJSONString  {
             message.append("Body:")
-            message.append(body.prettyPrintedJSONString ?? "")
+            message.append(bodyString)
         }
         
         message.append("--> END \(self.httpMethod ?? "")")
-        Logger.log(message.joined(separator: "\n"))
+        EZALogger.log(message.joined(separator: "\n"))
     }
     
     func networkRequestProgress(progress: Progress) {
@@ -94,13 +94,13 @@ extension URLRequest {
         message.append("\n⚪️ <-- PROGRESS for: \(components?.url?.absoluteString ?? "")")
         message.append("\(progress.completedUnitCount)\\\(progress.totalUnitCount) bytes")
         message.append("⚪️ <-- END PROGRESS")
-        Logger.log(message.joined(separator: "\n"))
+        EZALogger.log(message.joined(separator: "\n"))
     }
     
     func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?) {
         var message = [String]()
         
-        if error != nil {
+        if let error = error {
             message.append("\n🛑 REQUEST ERROR\n<-- \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
             message.append("\(String(describing: error))")
             
@@ -109,17 +109,17 @@ extension URLRequest {
             message.append("\n\(divider) <-- \(result?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
         }
         
-        if let headers = result?.allHeaderFields {
+        if let headersString = result?.allHeaderFields.prettyPrintedJSONString {
             message.append("Headers:")
-            message.append(headers.prettyPrintedJSONString ?? "")
+            message.append(headersString)
         }
         
-        if let body = currentData {
+        if let bodyString = currentData?.prettyPrintedJSONString {
             message.append("Body:")
-            message.append(body.prettyPrintedJSONString ?? "")
+            message.append(bodyString)
         }
         message.append("⚪️ <-- END HTTP")
-        Logger.log(message.joined(separator: "\n"))
+        EZALogger.log(message.joined(separator: "\n"))
     }
 }
 

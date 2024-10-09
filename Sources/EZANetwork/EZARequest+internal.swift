@@ -30,35 +30,48 @@ import Combine
 
 extension EZARequest {
     
-    var urlRequest: URLRequest {
+    var urlRequestPublisher: AnyPublisher<URLRequest, Error> {
         
-        var currentRequest = URLRequest(url: urlComponents.url!)
-        currentRequest.httpMethod = method.rawValue
-        currentRequest.httpBody = httpBody
-        currentRequest.allHTTPHeaderFields = headers
-
-        return currentRequest
+        switch task {
+        case .uploadMultipart(let data, let parameters):
+            
+            let request = self
+            return Just(urlComponents.url!)
+                .receive(on: DispatchQueue.global(qos: .userInitiated))
+                .tryMap { url in
+                    try request.createMultipartDataRequest(url: url, fileParts: data, parameters: parameters)
+                }
+                .compactMap { $0 }
+                .receive(on: DispatchQueue.main)
+                .eraseToAnyPublisher()
+        default:
+            var currentRequest = URLRequest(url: urlComponents.url!)
+            currentRequest.httpMethod = method.rawValue
+            currentRequest.allHTTPHeaderFields = headers
+            currentRequest.httpBody = httpBody
+            return Just(currentRequest).setFailureType(to: Error.self).eraseToAnyPublisher()
+        }
     }
 }
 
 
 extension EZARequest {
     
-    func taskPublisher(for request: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLError> {
+    func taskPublisher(for request: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, Error> {
         switch task {
         case .uploadData, .uploadFile:
             return URLSession.shared.uploadTaskPublisher(for: request, task: task)
         default:
-            return URLSession.shared.dataTaskPublisher(for: request).eraseToAnyPublisher()
+            return URLSession.shared.dataTaskPublisher(for: request).mapError { $0 as Error}.eraseToAnyPublisher()
         }
     }
 }
 
 private extension URLSession {
     
-    func uploadTaskPublisher(for request: URLRequest, task: EZATask) -> AnyPublisher<URLSession.DataTaskPublisher.Output, URLError> {
+    func uploadTaskPublisher(for request: URLRequest, task: EZATask) -> AnyPublisher<URLSession.DataTaskPublisher.Output, Error> {
         
-        let subject: PassthroughSubject<URLSession.DataTaskPublisher.Output, URLError> = .init()
+        let subject: PassthroughSubject<URLSession.DataTaskPublisher.Output, Error> = .init()
         
         var uploadTask = uploadTask(with: task, request: request) { data, response, error in
             guard let data = data, let response = response else {
@@ -98,12 +111,16 @@ private extension EZARequest {
     var httpBody: Data? {
         
         switch task {
-        case .empty, .uploadFile, .uploadData, .query:
+        case .empty, .uploadFile, .uploadData, .query, .uploadMultipart:
             return nil
         case .bodyData(let data):
             return data
-        case .bodyEncodable(let json):
-            return try? JSONEncoder().encode(json)
+        case .bodyParameters(let parameters):
+            let jsonData = try? JSONSerialization.data(withJSONObject: parameters, options: [.prettyPrinted])
+            return jsonData
+        case .bodyEncodable(let json, let encoder):
+            let encoder = encoder ?? JSONEncoder()
+            return try? encoder.encode(json)
         }
     }
     

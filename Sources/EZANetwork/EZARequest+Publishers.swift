@@ -30,37 +30,42 @@ import Combine
 
 public extension EZARequest {
     
-    func request() -> AnyPublisher<Void, NetworkApiError> {
+    func request() -> AnyPublisher<Void, EZANetworkError> {
         
-        let request = self.urlRequest
-        return Deferred { taskPublisher(for: request) }
-            .log(request: request)
+        return Deferred { urlRequestPublisher }
+            .flatMap {
+                self.taskPublisher(for: $0)
+                    .log(request: $0)
+            }
             .filterStatusCodes()
             .map { _ in }
             .mapInternalError()
             .eraseToAnyPublisher()
     }
     
-    func request<ResponseType: Decodable>(decoer: JSONDecoder = .init()) -> AnyPublisher<ResponseType, NetworkApiError> {
+    func request<ResponseType: Decodable>(decoder: JSONDecoder = .init()) -> AnyPublisher<ResponseType, EZANetworkError> {
         
-        let request = self.urlRequest
-        return Deferred { taskPublisher(for: request) }
-            .log(request: request)
+        return Deferred { urlRequestPublisher }
+            .flatMap {
+                self.taskPublisher(for: $0)
+                    .log(request: $0)
+            }
             .filterStatusCodes()
-            .decode(type: ResponseType.self, decoder: decoer)
+            .decode(type: ResponseType.self, decoder: decoder)
             .mapInternalError()
             .eraseToAnyPublisher()
     }
     
-    func request() -> AnyPublisher<ProgressResponse, NetworkApiError> {
+    func request() -> AnyPublisher<ProgressResponse, EZANetworkError> {
         
-        let request = self.urlRequest
-        return Deferred {
-            URLSessionProgressTracker(request: request).start()
-        }
-        .log(request: request)
-        .filterStatusCodes()
-        .mapInternalError()
-        .eraseToAnyPublisher()
+        return Deferred { urlRequestPublisher }
+            .flatMap {
+                URLSessionProgressTracker(request: $0)
+                    .start()
+                    .log(request: $0)
+            }
+            .filterStatusCodes()
+            .mapInternalError()
+            .eraseToAnyPublisher()
     }
 }

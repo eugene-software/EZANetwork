@@ -27,6 +27,7 @@
 
 import Foundation
 import Combine
+import MobileCoreServices
 
 public protocol EZARequest {
     
@@ -40,11 +41,16 @@ public protocol EZARequest {
 public enum EZATask {
     
     case empty
+    
     case bodyData(Data)
-    case bodyEncodable(Encodable)
+    case bodyParameters([String: Any])
+    case bodyEncodable(Encodable, encoder: JSONEncoder?)
+    
     case query(parameters: [String: Any])
+    
     case uploadFile(URL)
     case uploadData(Data)
+    case uploadMultipart(data: [FilePart], parameters: [String: Any]?)
 }
 
 public struct ProgressResponse {
@@ -53,7 +59,6 @@ public struct ProgressResponse {
     public let response: URLResponse?
     public let data: Data?
 }
-
 
 public enum HTTPMethod: String {
     case get = "GET"
