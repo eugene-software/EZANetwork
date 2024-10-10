@@ -1,5 +1,5 @@
 //
-//  EZARequest
+//  EZAHTTPMethod.swift
 //  EZANetwork
 //
 //  Created by Eugene Software on 5/18/21.
@@ -25,47 +25,10 @@
 //  SOFTWARE.
 //
 
+
 import Foundation
-import Combine
-import MobileCoreServices
 
-public protocol EZARequest {
-    
-    var url: URL { get }
-    var path: String? { get }
-    var method: EZANetwork.HTTPMethod { get }
-    var task: EZATask { get }
-    var headers: [String: String]? { get }
-}
-
-public enum EZATask {
-    
-    case empty
-    
-    case bodyData(Data)
-    case bodyParameters([String: Any])
-    case bodyEncodable(Encodable, encoder: JSONEncoder?)
-    
-    case query(parameters: [String: Any])
-    
-    case uploadFile(URL)
-    case uploadData(Data)
-    case uploadMultipart(data: [FilePart], parameters: [String: Any]?)
-}
-
-public struct ProgressResponse {
-    
-    public let progress: Progress?
-    public let response: EZAResponse
-}
-
-public struct EZAResponse {
-    
-    public let urlResponse: URLResponse?
-    public let data: Data?
-}
-
-public enum HTTPMethod: String {
+public enum EZAHTTPMethod: String {
     case get = "GET"
     case post = "POST"
     case patch = "PATCH"

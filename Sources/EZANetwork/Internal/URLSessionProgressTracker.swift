@@ -30,7 +30,7 @@ import Combine
 
 class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDataDelegate, @unchecked Sendable {
     
-    private var progressSubject = PassthroughSubject<ProgressResponse, Error>()
+    private var progressSubject = PassthroughSubject<EZAResponse, Error>()
     private var accumulatedData = Data()
     private let request: URLRequest
     private var response: URLResponse?
@@ -40,7 +40,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         self.request = request
     }
     
-    func start() -> AnyPublisher<ProgressResponse, Error> {
+    func start() -> AnyPublisher<EZAResponse, Error> {
         let session = URLSession(configuration: .default, delegate: self, delegateQueue: nil)
 
         // Start the download task
@@ -56,7 +56,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
             if response.expectedContentLength > 0 {
                 // Set the total unit count for progress tracking
                 progress.totalUnitCount = response.expectedContentLength
-                progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: nil)))
+                progressSubject.send(.init(progress: progress, urlResponse: response, data: nil))
             }
             completionHandler(.allow)
         }
@@ -66,7 +66,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         // Accumulate the data received so far
         accumulatedData.append(data)
         progress.completedUnitCount = Int64(accumulatedData.count)
-        progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: nil)))
+        progressSubject.send(.init(progress: progress, urlResponse: response, data: nil))
     }
 
     // Handle completion of download
@@ -76,7 +76,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         } else {
             // Emit the final result with full data and progress 100%
             progress.completedUnitCount = progress.totalUnitCount
-            progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: accumulatedData)))
+            progressSubject.send(.init(progress: progress, urlResponse: response, data: accumulatedData))
             progressSubject.send(completion: .finished)
         }
     }

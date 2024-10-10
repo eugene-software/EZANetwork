@@ -30,40 +30,20 @@ import Combine
 
 public extension EZARequest {
     
-    func request() -> AnyPublisher<Void, EZANetworkError> {
+    func request() -> AnyPublisher<EZAResponse, EZAError> {
         
         return Deferred { urlRequestPublisher }
             .flatMap {
                 self.taskPublisher(for: $0)
+                    .map { .init(progress: nil, urlResponse: $0.response, data: $0.data) }
                     .log(request: $0)
             }
-            .mapError(EZANetworkError.networkError)
+            .mapError(EZAError.init)
             .filterStatusCodes()
-            .map { _ in }
-            .mapUnknownErrors()
             .eraseToAnyPublisher()
     }
     
-    func request<ResponseType: Decodable>(decoder: JSONDecoder = .init()) -> AnyPublisher<ResponseType, EZANetworkError> {
-        
-        return Deferred { urlRequestPublisher }
-            .flatMap {
-                self.taskPublisher(for: $0)
-                    .log(request: $0)
-            }
-            .mapError(EZANetworkError.networkError)
-            .filterStatusCodes()
-            .flatMap {
-                return Just($0.data)
-                    .decode(type: ResponseType.self, decoder: decoder)
-                    .mapError(EZANetworkError.decoding)
-                    .eraseToAnyPublisher()
-            }
-            .mapUnknownErrors()
-            .eraseToAnyPublisher()
-    }
-    
-    func request() -> AnyPublisher<ProgressResponse, EZANetworkError> {
+    func download() -> AnyPublisher<EZAResponse, EZAError> {
         
         return Deferred { urlRequestPublisher }
             .flatMap {
@@ -71,9 +51,8 @@ public extension EZARequest {
                     .start()
                     .log(request: $0)
             }
-            .mapError(EZANetworkError.networkError)
+            .mapError(EZAError.init)
             .filterStatusCodes()
-            .mapUnknownErrors()
             .eraseToAnyPublisher()
     }
 }

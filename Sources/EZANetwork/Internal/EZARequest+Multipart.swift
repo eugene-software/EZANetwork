@@ -30,38 +30,9 @@ import Foundation
 import Combine
 import CoreServices
 
-public struct FilePart {
+extension EZAFilePart {
     
-    let name: String
-    let fileName: String
-    let mimeType: String
-    let fileData: Data?
-    let fileURL: URL?
-    
-    // Initializer for in-memory data (Data)
-    public init(fileData: Data, name: String, fileName: String, mimeType: String) {
-        self.name = name
-        self.fileName = fileName
-        self.mimeType = mimeType
-        self.fileData = fileData
-        self.fileURL = nil
-    }
-    
-    // Initializer for file URL (Automatically get file name and MIME type)
-    public init(fileURL: URL, name: String) {
-        self.name = name
-        self.fileURL = fileURL
-        self.fileData = nil
-        
-        // Use FileManager to get the file name
-        self.fileName = fileURL.lastPathComponent
-        
-        // Get file extension and determine the MIME type
-        let fileExtension = fileURL.pathExtension
-        self.mimeType = Self.mimeType(for: fileExtension)
-    }
-    
-    private static func mimeType(for pathExtension: String) -> String {
+    static func mimeType(for pathExtension: String) -> String {
         if let uti = UTTypeCreatePreferredIdentifierForTag(kUTTagClassFilenameExtension, pathExtension as CFString, nil)?.takeRetainedValue(),
            let mimeType = UTTypeCopyPreferredTagWithClass(uti, kUTTagClassMIMEType)?.takeRetainedValue() {
             return mimeType as String
@@ -77,7 +48,7 @@ extension EZARequest {
         "EZARequest.Boundary-\(UUID().uuidString)"
     }
     
-    func createMultipartDataRequest(url: URL, fileParts: [FilePart], parameters: [String: Any]?) throws -> URLRequest {
+    func createMultipartDataRequest(url: URL, fileParts: [EZAFilePart], parameters: [String: Any]?) throws -> URLRequest {
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -103,7 +74,7 @@ extension EZARequest {
                 do {
                     fileData = try Data(contentsOf: url)
                 } catch {
-                    throw EZANetworkError.unknown(error)
+                    throw EZAError.unknown(error)
                 }
             } else {
                 continue

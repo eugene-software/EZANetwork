@@ -52,20 +52,17 @@ extension EZARequest {
             return Just(currentRequest).setFailureType(to: Error.self).eraseToAnyPublisher()
         }
     }
-}
-
-
-extension EZARequest {
     
     func taskPublisher(for request: URLRequest) -> AnyPublisher<URLSession.DataTaskPublisher.Output, Error> {
         switch task {
         case .uploadData, .uploadFile:
             return URLSession.shared.uploadTaskPublisher(for: request, task: task)
         default:
-            return URLSession.shared.dataTaskPublisher(for: request).mapError { $0 as Error}.eraseToAnyPublisher()
+            return URLSession.shared.dataTaskPublisher(for: request).mapError { $0 as Error }.eraseToAnyPublisher()
         }
     }
 }
+
 
 private extension URLSession {
     
@@ -136,6 +133,28 @@ private extension EZARequest {
             components.queryItems = query
         }
         return components
+    }
+}
+
+extension Publisher {
+    
+    func filterStatusCodes() -> AnyPublisher<EZAResponse, EZAError>
+    where Self.Output == EZAResponse
+    {
+        return tryMap { element -> EZAResponse in
+            guard let httpResponse = element.urlResponse as? HTTPURLResponse else {
+                throw EZAError.networkError(URLError(.badServerResponse))
+            }
+            if 200..<300 ~= httpResponse.statusCode {
+                return element
+            } else {
+                throw EZAError.invalidResponse(code: httpResponse.statusCode, response: element)
+            }
+        }
+        .mapError {
+            $0 as? EZAError ?? EZAError.unknown($0)
+        }
+        .eraseToAnyPublisher()
     }
 }
 

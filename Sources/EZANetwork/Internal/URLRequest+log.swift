@@ -31,27 +31,13 @@ import Combine
 extension Publisher {
     
     func log(request: URLRequest) -> Publishers.HandleEvents<Self>
-    where Self.Output == URLSession.DataTaskPublisher.Output
-    {
-        handleEvents(receiveSubscription: { sub in
-            request.networkRequestDidStart()
-        }, receiveOutput: { output in
-            request.networkRequestDidComplete(response: .init(urlResponse: output.response, data: output.data), error: nil)
-        }, receiveCompletion: { completion in
-            if case .failure(let error) = completion {
-                request.networkRequestDidComplete(response: nil, error: error)
-            }
-        })
-    }
-    
-    func log(request: URLRequest) -> Publishers.HandleEvents<Self>
-    where Self.Output == ProgressResponse
+    where Self.Output == EZAResponse
     {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            if let _ = output.response.data {
-                request.networkRequestDidComplete(response: output.response, error: nil)
+            if let _ = output.data {
+                request.networkRequestDidComplete(response: output, error: nil)
             } else if let progress = output.progress {
                 request.networkRequestProgress(progress: progress)
             }
