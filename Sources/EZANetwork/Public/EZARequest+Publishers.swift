@@ -32,14 +32,16 @@ public extension EZARequest {
     
     func request() -> AnyPublisher<EZAResponse, EZAError> {
         
+        let request = self
+        
         return Deferred { urlRequestPublisher }
             .flatMap {
-                self.taskPublisher(for: $0)
+                request.taskPublisher(for: $0)
                     .map { .init(progress: nil, urlResponse: $0.response, data: $0.data) }
+                    .mapError(EZAError.init)
+                    .filterStatusCodes()
                     .log(request: $0)
             }
-            .mapError(EZAError.init)
-            .filterStatusCodes()
             .eraseToAnyPublisher()
     }
     
@@ -49,10 +51,10 @@ public extension EZARequest {
             .flatMap {
                 URLSessionProgressTracker(request: $0)
                     .start()
+                    .mapError(EZAError.init)
+                    .filterStatusCodes()
                     .log(request: $0)
             }
-            .mapError(EZAError.init)
-            .filterStatusCodes()
             .eraseToAnyPublisher()
     }
 }

@@ -30,18 +30,18 @@ import Combine
 
 extension EZARequest {
     
-    var urlRequestPublisher: AnyPublisher<URLRequest, Error> {
+    var urlRequestPublisher: AnyPublisher<URLRequest, EZAError> {
         
         switch task {
         case .uploadMultipart(let data, let parameters):
             
             let request = self
             return Just(urlComponents.url!)
+                .setFailureType(to: EZAError.self)
                 .receive(on: DispatchQueue.global(qos: .userInitiated))
-                .tryMap { url in
-                    try request.createMultipartDataRequest(url: url, fileParts: data, parameters: parameters)
+                .flatMap {
+                    request.createMultipartDataRequest(url: $0, fileParts: data, parameters: parameters)
                 }
-                .compactMap { $0 }
                 .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
         default:
@@ -49,7 +49,7 @@ extension EZARequest {
             currentRequest.httpMethod = method.rawValue
             currentRequest.allHTTPHeaderFields = headers
             currentRequest.httpBody = httpBody
-            return Just(currentRequest).setFailureType(to: Error.self).eraseToAnyPublisher()
+            return Just(currentRequest).setFailureType(to: EZAError.self).eraseToAnyPublisher()
         }
     }
     

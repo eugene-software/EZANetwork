@@ -30,8 +30,8 @@ import Combine
 
 extension Publisher {
     
-    func log(request: URLRequest) -> Publishers.HandleEvents<Self>
-    where Self.Output == EZAResponse
+    func log(request: URLRequest) -> AnyPublisher<Self.Output, Self.Failure>
+    where Self.Output == EZAResponse, Self.Failure == EZAError
     {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
@@ -43,9 +43,14 @@ extension Publisher {
             }
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                request.networkRequestDidComplete(response: nil, error: error)
+                if case .invalidResponse(let code, let response) = error {
+                    request.networkRequestDidComplete(response: response, error: error)
+                } else {
+                    request.networkRequestDidComplete(response: nil, error: error)
+                }
             }
         })
+        .eraseToAnyPublisher()
     }
 }
 
@@ -66,8 +71,8 @@ extension URLRequest {
             message.append(bodyString)
         }
         
-        message.append("--> END \(self.httpMethod ?? "")")
-        EZALogger.log(message.joined(separator: "\n"))
+        message.append("⚪️ --> END \(self.httpMethod ?? "")")
+        EZALogger.log(message.joined(separator: "\n"), level: .debug)
     }
     
     func networkRequestProgress(progress: Progress) {
@@ -80,7 +85,7 @@ extension URLRequest {
         message.append("\n⚪️ <-- PROGRESS for: \(components?.url?.absoluteString ?? "")")
         message.append("\(progress.completedUnitCount)\\\(progress.totalUnitCount) bytes")
         message.append("⚪️ <-- END PROGRESS")
-        EZALogger.log(message.joined(separator: "\n"))
+        EZALogger.log(message.joined(separator: "\n"), level: .verbose)
     }
     
     func networkRequestDidComplete(response: EZAResponse?, error: Error?) {
@@ -91,12 +96,11 @@ extension URLRequest {
         var message = [String]()
         
         if let error = error {
-            message.append("\n🛑 REQUEST ERROR\n<-- \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
-            message.append("\(String(describing: error))")
+            message.append("\n❌ <-- \(urlResponse?.statusCode ?? 000) \(self.httpMethod ?? "") \(self.url?.absoluteString ?? "")")
+            message.append("\(error)")
             
         } else {
-            let divider = 200...299 ~= urlResponse!.statusCode ? "✅" : "❌"
-            message.append("\n\(divider) <-- \(urlResponse?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
+            message.append("\n✅ <-- \(urlResponse?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
         }
         
         if let headersString = urlResponse?.allHeaderFields.prettyPrintedJSONString {
@@ -108,8 +112,8 @@ extension URLRequest {
             message.append("Body:")
             message.append(bodyString)
         }
-        message.append("⚪️ <-- END HTTP")
-        EZALogger.log(message.joined(separator: "\n"))
+        message.append("\(error != nil ? "🛑" : "⚪️") <-- END HTTP")
+        EZALogger.log(message.joined(separator: "\n"), level: error != nil ? .error : .debug)
     }
 }
 

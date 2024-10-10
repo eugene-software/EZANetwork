@@ -72,6 +72,13 @@ NetworkApi
     .store(in: &cancellables)
 ```
 
+- You can also set logging level for EZANetwork
+
+```swift
+
+EZALogger.set(logLevel: .error) // .debug by default. Set ".disabled" to disable all logs
+```
+
 ## Installation
 
 ### Swift Package Manager

@@ -40,7 +40,11 @@ public extension Publisher where Output == EZAResponse, Failure == EZAError {
             return Just(data)
                 .decode(type: ResponseType.self, decoder: decoder)
                 .mapError { error in
-                    EZAError.decoding(error)
+                    EZALogger.log(
+                        "\n🛑 <-- DECODING ERROR \(response.urlResponse?.url?.absoluteString ?? "")\n\(String(describing: error))\n🛑 <-- END ERROR",
+                        level: .error
+                    )
+                    return EZAError.decoding(error)
                 }
                 .eraseToAnyPublisher()
         }

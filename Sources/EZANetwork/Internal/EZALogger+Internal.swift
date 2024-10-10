@@ -1,5 +1,5 @@
 //
-//  EZAError.swift
+//  EZALogger+Internal.swift
 //  EZANetwork
 //
 //  Created by Eugene Software on 5/18/21.
@@ -26,31 +26,35 @@
 //
 
 import Foundation
-import Combine
 
-public enum EZAError: Error {
+extension EZALogger {
     
-    case noData
-    case decoding(Error)
-    case invalidResponse(code: Int, response: EZAResponse)
-    case networkError(Error)
-    case unknown(Error)
-    case networkUnavailable
+    private static let formatter: DateFormatter = {
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
+        return formatter
+    }()
     
-    init(_ error: Error) {
-
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .notConnectedToInternet,
-                 .networkConnectionLost,
-                 .dataNotAllowed:
-                self = .networkUnavailable
-            default:
-                self = .networkError(urlError)
-            }
-        } else {
-            self = .unknown(error)
+    static func log(_ message: String, level: LogLevel = .info) {
+        #if DEBUG
+        if level.priority >= logLevel.priority {
+            let timestamp = formatter.string(from: Date())
+            print("\n\(timestamp) EZANetwork: [\(level.rawValue)] \(message)\n")
         }
+        #endif
     }
 }
 
+private extension EZALogger.LogLevel {
+    
+    var priority: Int {
+        switch self {
+        case .verbose: 0
+        case .debug: 1
+        case .info: 2
+        case .warning: 3
+        case .error: 4
+        case .disabled: 5
+        }
+    }
+}

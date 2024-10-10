@@ -27,27 +27,20 @@
 
 import Foundation
 
-class EZALogger {
-    
-    private static let formatter: DateFormatter = {
-        let formatter = DateFormatter()
-        formatter.dateFormat = "yyyy-MM-dd HH:mm:ss"
-        return formatter
-    }()
-    
-    // Log function that includes a timestamp and only prints in debug mode
-    static func log(_ message: String, level: LogLevel = .info) {
-        #if DEBUG
-        let timestamp = formatter.string(from: Date())
-        print("\n\(timestamp) EZANetwork: [\(level.rawValue)] \(message)\n")
-        #endif
+public class EZALogger: @unchecked Sendable {
+
+    static var logLevel: LogLevel = .debug
+
+    public static func set(logLevel: LogLevel) {
+        self.logLevel = logLevel
     }
     
-    // Enumeration to represent different log levels
-    enum LogLevel: String {
+    public enum LogLevel: String {
+        case verbose = "VERBOSE"
         case info = "INFO"
         case warning = "WARNING"
         case error = "ERROR"
         case debug = "DEBUG"
+        case disabled = "DISABLED"
     }
 }

@@ -48,7 +48,7 @@ extension EZARequest {
         "EZARequest.Boundary-\(UUID().uuidString)"
     }
     
-    func createMultipartDataRequest(url: URL, fileParts: [EZAFilePart], parameters: [String: Any]?) throws -> URLRequest {
+    func createMultipartDataRequest(url: URL, fileParts: [EZAFilePart], parameters: [String: Any]?) -> AnyPublisher<URLRequest, EZAError>  {
         
         var request = URLRequest(url: url)
         request.httpMethod = method.rawValue
@@ -74,7 +74,7 @@ extension EZARequest {
                 do {
                     fileData = try Data(contentsOf: url)
                 } catch {
-                    throw EZAError.unknown(error)
+                    return Fail<URLRequest, EZAError>(error: EZAError.unknown(error)).eraseToAnyPublisher()
                 }
             } else {
                 continue
@@ -88,7 +88,7 @@ extension EZARequest {
 
         httpBody.appendString("--\(boundary)--")
         request.httpBody = httpBody as Data
-        return request
+        return Just(request).setFailureType(to: EZAError.self).eraseToAnyPublisher()
     }
     
     func convertFormField(named name: String, value: String, using boundary: String) -> String {
