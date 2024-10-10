@@ -103,7 +103,7 @@ extension EZARequest {
                 do {
                     fileData = try Data(contentsOf: url)
                 } catch {
-                    throw EZANetworkError(error)
+                    throw EZANetworkError.unknown(error)
                 }
             } else {
                 continue

@@ -32,26 +32,9 @@ public enum EZANetworkError: Error {
     
     case noRequest
     case decoding(Error)
-    case server(code: Int, Data?)
-    case badResponse(Error)
+    case invalidResponse(code: Int, response: EZAResponse)
+    case networkError(Error)
     case unknown(Error)
-    case networkFailure
-    
-    init(_ error: Error) {
-
-        if let urlError = error as? URLError {
-            switch urlError.code {
-            case .notConnectedToInternet,
-                 .networkConnectionLost,
-                 .dataNotAllowed: self = .networkFailure
-            default: self = .badResponse(urlError)
-            }
-        } else if let error = error as? DecodingError {
-            self = .decoding(error)
-        } else {
-            self = .unknown(error)
-        }
-    }
 }
 
 
@@ -61,35 +44,39 @@ extension Publisher {
     where Self.Output == ProgressResponse
     {
         return tryMap { element -> ProgressResponse in
-            guard let httpResponse = element.response as? HTTPURLResponse else {
-                throw EZANetworkError.badResponse(URLError(.badServerResponse))
+            guard let httpResponse = element.response.urlResponse as? HTTPURLResponse else {
+                throw EZANetworkError.networkError(URLError(.badServerResponse))
             }
             if 200..<300 ~= httpResponse.statusCode {
                 return element
             } else {
-                throw EZANetworkError.server(code: httpResponse.statusCode, element.data)
+                throw EZANetworkError.invalidResponse(code: httpResponse.statusCode, response: element.response)
             }
         }
     }
     
-    func filterStatusCodes() -> Publishers.TryMap<Self, Data>
+    func filterStatusCodes() -> Publishers.TryMap<Self, Self.Output>
     where Self.Output == URLSession.DataTaskPublisher.Output
     {
-        return tryMap { element -> Data in
+        return tryMap { element -> Self.Output in
             guard let httpResponse = element.response as? HTTPURLResponse else {
-                throw EZANetworkError.badResponse(URLError(.badServerResponse))
+                throw EZANetworkError.networkError(URLError(.badServerResponse))
             }
             if 200..<300 ~= httpResponse.statusCode {
-                return element.data
+                return element
             } else {
-                throw EZANetworkError.server(code: httpResponse.statusCode, element.data)
+                throw EZANetworkError.invalidResponse(code: httpResponse.statusCode, response: .init(urlResponse: httpResponse, data: element.data))
             }
         }
     }
-    
-    func mapInternalError() -> Publishers.MapError<Self, EZANetworkError> {
-        return mapError {
-            return ($0 is EZANetworkError) ? $0 as! EZANetworkError : EZANetworkError($0)
+}
+
+extension Publisher {
+
+    func mapUnknownErrors() -> AnyPublisher<Output, EZANetworkError> {
+        return self.catch { error -> AnyPublisher<Output, EZANetworkError> in
+            return Fail(error: error as? EZANetworkError ?? EZANetworkError.unknown(error)).eraseToAnyPublisher()
         }
+        .eraseToAnyPublisher()
     }
 }

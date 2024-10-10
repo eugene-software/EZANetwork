@@ -73,7 +73,7 @@ private extension URLSession {
         
         let subject: PassthroughSubject<URLSession.DataTaskPublisher.Output, Error> = .init()
         
-        var uploadTask = uploadTask(with: task, request: request) { data, response, error in
+        let uploadTask = uploadTask(with: task, request: request) { data, response, error in
             guard let data = data, let response = response else {
                 subject.send(completion: .failure(error as? URLError ?? URLError(.badServerResponse)))
                 return

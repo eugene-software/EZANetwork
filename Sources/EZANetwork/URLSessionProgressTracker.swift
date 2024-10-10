@@ -56,7 +56,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
             if response.expectedContentLength > 0 {
                 // Set the total unit count for progress tracking
                 progress.totalUnitCount = response.expectedContentLength
-                progressSubject.send(ProgressResponse(progress: progress, response: response, data: nil))
+                progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: nil)))
             }
             completionHandler(.allow)
         }
@@ -66,7 +66,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         // Accumulate the data received so far
         accumulatedData.append(data)
         progress.completedUnitCount = Int64(accumulatedData.count)
-        progressSubject.send(ProgressResponse(progress: progress, response: response, data: nil))
+        progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: nil)))
     }
 
     // Handle completion of download
@@ -76,7 +76,7 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
         } else {
             // Emit the final result with full data and progress 100%
             progress.completedUnitCount = progress.totalUnitCount
-            progressSubject.send(ProgressResponse(progress: progress, response: response, data: accumulatedData))
+            progressSubject.send(ProgressResponse(progress: progress, response: .init(urlResponse: response, data: accumulatedData)))
             progressSubject.send(completion: .finished)
         }
     }

@@ -36,10 +36,10 @@ extension Publisher {
         handleEvents(receiveSubscription: { sub in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
+            request.networkRequestDidComplete(response: .init(urlResponse: output.response, data: output.data), error: nil)
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                request.networkRequestDidComplete(result: nil, currentData: nil, error: error)
+                request.networkRequestDidComplete(response: nil, error: error)
             }
         })
     }
@@ -50,14 +50,14 @@ extension Publisher {
         handleEvents(receiveSubscription: { _ in
             request.networkRequestDidStart()
         }, receiveOutput: { output in
-            if let _ = output.data {
-                request.networkRequestDidComplete(result: output.response as? HTTPURLResponse, currentData: output.data, error: nil)
+            if let _ = output.response.data {
+                request.networkRequestDidComplete(response: output.response, error: nil)
             } else if let progress = output.progress {
                 request.networkRequestProgress(progress: progress)
             }
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                request.networkRequestDidComplete(result: nil, currentData: nil, error: error)
+                request.networkRequestDidComplete(response: nil, error: error)
             }
         })
     }
@@ -97,7 +97,11 @@ extension URLRequest {
         EZALogger.log(message.joined(separator: "\n"))
     }
     
-    func networkRequestDidComplete(result: HTTPURLResponse?, currentData: Data?, error: Error?) {
+    func networkRequestDidComplete(response: EZAResponse?, error: Error?) {
+        
+        let urlResponse = response?.urlResponse as? HTTPURLResponse
+        let data = response?.data
+        
         var message = [String]()
         
         if let error = error {
@@ -105,16 +109,16 @@ extension URLRequest {
             message.append("\(String(describing: error))")
             
         } else {
-            let divider = 200...299 ~= result!.statusCode ? "✅" : "❌"
-            message.append("\n\(divider) <-- \(result?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
+            let divider = 200...299 ~= urlResponse!.statusCode ? "✅" : "❌"
+            message.append("\n\(divider) <-- \(urlResponse?.statusCode ?? 000) \(self.url?.absoluteString ?? "")")
         }
         
-        if let headersString = result?.allHeaderFields.prettyPrintedJSONString {
+        if let headersString = urlResponse?.allHeaderFields.prettyPrintedJSONString {
             message.append("Headers:")
             message.append(headersString)
         }
         
-        if let bodyString = currentData?.prettyPrintedJSONString {
+        if let bodyString = data?.prettyPrintedJSONString {
             message.append("Body:")
             message.append(bodyString)
         }

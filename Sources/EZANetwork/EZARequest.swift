@@ -56,7 +56,12 @@ public enum EZATask {
 public struct ProgressResponse {
     
     public let progress: Progress?
-    public let response: URLResponse?
+    public let response: EZAResponse
+}
+
+public struct EZAResponse {
+    
+    public let urlResponse: URLResponse?
     public let data: Data?
 }
 

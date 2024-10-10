@@ -37,9 +37,10 @@ public extension EZARequest {
                 self.taskPublisher(for: $0)
                     .log(request: $0)
             }
+            .mapError(EZANetworkError.networkError)
             .filterStatusCodes()
             .map { _ in }
-            .mapInternalError()
+            .mapUnknownErrors()
             .eraseToAnyPublisher()
     }
     
@@ -50,9 +51,15 @@ public extension EZARequest {
                 self.taskPublisher(for: $0)
                     .log(request: $0)
             }
+            .mapError(EZANetworkError.networkError)
             .filterStatusCodes()
-            .decode(type: ResponseType.self, decoder: decoder)
-            .mapInternalError()
+            .flatMap {
+                return Just($0.data)
+                    .decode(type: ResponseType.self, decoder: decoder)
+                    .mapError(EZANetworkError.decoding)
+                    .eraseToAnyPublisher()
+            }
+            .mapUnknownErrors()
             .eraseToAnyPublisher()
     }
     
@@ -64,8 +71,9 @@ public extension EZARequest {
                     .start()
                     .log(request: $0)
             }
+            .mapError(EZANetworkError.networkError)
             .filterStatusCodes()
-            .mapInternalError()
+            .mapUnknownErrors()
             .eraseToAnyPublisher()
     }
 }
