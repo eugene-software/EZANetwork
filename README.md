@@ -81,6 +81,13 @@ EZALogger.set(logLevel: .error) // .debug by default. Set ".disabled" to disable
 
 ## Installation
 
+### Cocoapods
+CBCBluetooth is available through [CocoaPods](https://cocoapods.org). To install
+it, simply add the following line to your Podfile:
+
+```ruby
+pod 'EZANetwork'
+```
 ### Swift Package Manager
 1. Right click in the Project Navigator
 2. Select "Add Packages..."
