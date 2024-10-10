@@ -43,7 +43,7 @@ extension Publisher {
             }
         }, receiveCompletion: { completion in
             if case .failure(let error) = completion {
-                if case .invalidResponse(let code, let response) = error {
+                if case .invalidResponse(_, let response) = error {
                     request.networkRequestDidComplete(response: response, error: error)
                 } else {
                     request.networkRequestDidComplete(response: nil, error: error)
