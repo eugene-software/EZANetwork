@@ -8,7 +8,7 @@
 
 Pod::Spec.new do |s|
   s.name             = 'EZANetwork'
-  s.version          = '1.1.2'
+  s.version          = '1.2.0'
   s.summary          = 'Custom networking library with Combine'
   s.swift_version    = '6.0'
 # This description is used to generate tags and improve search results.
