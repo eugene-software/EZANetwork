@@ -1,5 +1,6 @@
 # EZANetwork
-
+[![Version](https://img.shields.io/cocoapods/v/EZANetwork.svg?style=flat-square)](https://cocoapods.org/pods/EZANetwork)
+[![License](https://img.shields.io/cocoapods/l/EZANetwork.svg?style=flat-square)](https://cocoapods.org/pods/EZANetwork)
 
 ## Requirements 
 
