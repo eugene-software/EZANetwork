@@ -77,8 +77,16 @@ private extension URLSession {
             }
             subject.send((data: data, response: response))
         }
-        uploadTask?.resume()
-        return subject.eraseToAnyPublisher()
+        
+        return subject
+            .handleEvents(
+                receiveSubscription: { _ in
+                    uploadTask?.resume()
+                },
+                receiveCancel: {
+                    uploadTask?.cancel()
+                })
+            .eraseToAnyPublisher()
     }
     
     func uploadTask(with task: EZATask, request: URLRequest, completion: @escaping @Sendable (Data?, URLResponse?, (any Error)?) -> Void) -> URLSessionUploadTask? {

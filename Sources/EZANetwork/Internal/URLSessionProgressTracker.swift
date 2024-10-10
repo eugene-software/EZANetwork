@@ -45,10 +45,15 @@ class URLSessionProgressTracker: NSObject, URLSessionTaskDelegate, URLSessionDat
 
         // Start the download task
         let downloadTask = session.dataTask(with: request)
-        defer {
-            downloadTask.resume()
-        }
-        return progressSubject.eraseToAnyPublisher()
+        return progressSubject
+            .handleEvents(
+                receiveSubscription: { _ in
+                    downloadTask.resume()
+                },
+                receiveCancel: {
+                    downloadTask.cancel()
+                })
+            .eraseToAnyPublisher()
     }
     
     func urlSession(_ session: URLSession, dataTask: URLSessionDataTask, didReceive response: URLResponse, completionHandler: @escaping (URLSession.ResponseDisposition) -> Void) {
