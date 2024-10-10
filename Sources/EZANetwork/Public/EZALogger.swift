@@ -29,7 +29,7 @@ import Foundation
 
 public class EZALogger: @unchecked Sendable {
 
-    static var logLevel: LogLevel = .debug
+    nonisolated(unsafe) static var logLevel: LogLevel = .debug
 
     public static func set(logLevel: LogLevel) {
         self.logLevel = logLevel

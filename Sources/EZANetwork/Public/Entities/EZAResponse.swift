@@ -27,7 +27,7 @@
 
 import Foundation
 
-public struct EZAResponse {
+public struct EZAResponse: Sendable {
     
     public let progress: Progress?
     public let urlResponse: URLResponse?
