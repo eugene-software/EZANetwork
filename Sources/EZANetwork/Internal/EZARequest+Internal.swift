@@ -37,19 +37,20 @@ extension EZARequest {
             
             let request = self
             return Just(urlComponents.url!)
-                .setFailureType(to: EZAError.self)
                 .receive(on: DispatchQueue.global(qos: .userInitiated))
+                .setFailureType(to: EZAError.self)
                 .flatMap {
                     request.createMultipartDataRequest(url: $0, fileParts: data, parameters: parameters)
                 }
-                .receive(on: DispatchQueue.main)
                 .eraseToAnyPublisher()
         default:
             var currentRequest = URLRequest(url: urlComponents.url!)
             currentRequest.httpMethod = method.rawValue
             currentRequest.allHTTPHeaderFields = headers
             currentRequest.httpBody = httpBody
-            return Just(currentRequest).setFailureType(to: EZAError.self).eraseToAnyPublisher()
+            return Just(currentRequest)
+                .receive(on: DispatchQueue.global(qos: .userInitiated))
+                .setFailureType(to: EZAError.self).eraseToAnyPublisher()
         }
     }
     
